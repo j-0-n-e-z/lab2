@@ -7,26 +7,31 @@ from pymorphy2 import MorphAnalyzer
 import math
 
 
-def compute_tf(words):
-#На вход берем текст в виде списка (list) слов
-    #Считаем частотность всех терминов во входном массиве с помощью
-    #метода Counter библиотеки collections
-    tf_text = Counter(words)
-    for i in tf_text:
-        #для каждого слова в tf_text считаем TF путём деления
-        #встречаемости слова на общее количество слов в тексте
-        tf_text[i] = tf_text[i] / float(len(words))
-    #возвращаем объект типа Counter c TF всех слов текста
-    return tf_text
+def compute_tf(frequency, total_words_count):
+    return frequency / total_words_count
+# #На вход берем текст в виде списка (list) слов
+#     #Считаем частотность всех терминов во входном массиве с помощью
+#     #метода Counter библиотеки collections
+#     tf_text = Counter(words)
+#     for i in tf_text:
+#         #для каждого слова в tf_text считаем TF путём деления
+#         #встречаемости слова на общее количество слов в тексте
+#         tf_text[i] = tf_text[i] / float(len(words))
+#     #возвращаем объект типа Counter c TF всех слов текста
+#     return tf_text
 
 
-def compute_idf(word, words):
+def compute_idf(word, words_of_sentences):
 #на вход берется слово, для которого считаем IDF
 #и корпус документов в виде списка списков слов
         #количество документов, где встречается искомый термин
         #считается как генератор списков
-    return math.log10(len(words) / sum([1.0 for i in words if word in i]))
+    return math.log10(len(words_of_sentences) / sum([1.0 for words in words_of_sentences if word in words]))
 
+
+def compute_tf_idf(word, word_frequency, words_of_sentences):
+    total_words_count = len(sum(words_of_sentences, []))
+    return compute_tf(word_frequency, total_words_count) * compute_idf(word, words_of_sentences)
 
 def input_compression_percentage():
     compression_percentage_correct = False
@@ -74,8 +79,9 @@ for sentence in sentences:
 
     norm_words_of_sentences.append(norm_words)
 
+sorted_frequency_dictionary_lem = sort_dictionary_by_value(frequency_dictionary_lem, reverse=True)
 with open('freq_dict_lem.txt', 'w', encoding='UTF-8') as output_file:
-    for token, appearances_count in sort_dictionary_by_value(frequency_dictionary_lem, reverse=True).items():
+    for token, appearances_count in sorted_frequency_dictionary_lem.items():
         output_file.write(f'{token}: {appearances_count}\n')
 
 with open('freq_dict_stem.txt', 'w', encoding='UTF-8') as output_file:
@@ -84,11 +90,20 @@ with open('freq_dict_stem.txt', 'w', encoding='UTF-8') as output_file:
 
 # task 4
 # get sentences freq
+word_tf_idf = defaultdict(float)
+for norm_words in norm_words_of_sentences:
+    for norm_word in norm_words:
+        word_tf_idf[norm_word] = compute_tf_idf(norm_word, frequency_dictionary_lem[norm_word], norm_words_of_sentences)
+
+with open(f'word_tf_idf.txt', 'w', encoding='UTF-8') as output_file:
+    for word, tf_idf in sort_dictionary_by_value(word_tf_idf, reverse=True).items():
+        output_file.write(f'{word}: {tf_idf}\n')
+
 for sentence_idx, norm_words in enumerate(norm_words_of_sentences):
     for norm_word in norm_words:
-        sentences_dictionary[sentences[sentence_idx]] += frequency_dictionary_lem[norm_word]
-sorted_sentence_dictionary = sort_dictionary_by_value(sentences_dictionary, reverse=True)
+        sentences_dictionary[sentences[sentence_idx]] += word_tf_idf[norm_word]
 # save sentences freq
+sorted_sentence_dictionary = sort_dictionary_by_value(sentences_dictionary, reverse=True)
 with open(f'sentences_frequency.txt', 'w', encoding='UTF-8') as output_file:
     for sentence, frequency in sorted_sentence_dictionary.items():
         output_file.write(f'{sentence}: {frequency}\n')
@@ -106,3 +121,27 @@ report_sentences = [sentence.capitalize() for sentence in sorted_report_sentence
 with open(f'report_{compression_percentage}.txt', 'w', encoding='UTF-8') as output_file:
     for sentence in report_sentences:
         output_file.write(sentence + '\n')
+
+# keywords = list(frequency_dictionary_lem.items())[:20]
+# print(compute_idf(keywords[0], norm_words_of_sentences))
+#
+# keywords = list(frequency_dictionary_lem.keys())[:20]
+# idfs = []
+# for keyword in keywords:
+#     idfs.append(compute_idf(keyword, norm_words_of_sentences))
+#
+# total_words_count = 0
+# for words in norm_words_of_sentences:
+#     total_words_count += len(words)
+# keywords_tuples = list(frequency_dictionary_lem.values())[:20]
+# compute_tf(keywords_tuples, total_words_count)
+
+keywords = list(sorted_frequency_dictionary_lem.items())[:20]
+keyword_tf_idf = defaultdict(float)
+for keyword_tuple in keywords:
+    tf_idf = compute_tf_idf(keyword_tuple[0], keyword_tuple[1], norm_words_of_sentences)
+    keyword_tf_idf[keyword_tuple[0]] = tf_idf
+
+with open(f'keyword_tf_idf.txt', 'w', encoding='UTF-8') as output_file:
+    for keyword, tf_idf in keyword_tf_idf.items():
+        output_file.write(f'{keyword}: {tf_idf}\n')
