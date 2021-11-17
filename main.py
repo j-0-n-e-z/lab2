@@ -33,6 +33,7 @@ def compute_tf_idf(word, word_frequency, words_of_sentences):
     total_words_count = len(sum(words_of_sentences, []))
     return compute_tf(word_frequency, total_words_count) * compute_idf(word, words_of_sentences)
 
+
 def input_compression_percentage():
     compression_percentage_correct = False
     compression_percent = 0
