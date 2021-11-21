@@ -1,10 +1,8 @@
 from collections import defaultdict
 from nltk import download
 from main import get_sentences, get_clean_tokens, get_normal_form_words, sort_dictionary_by_value, compute_tf_idf
-# TF термина а = (Количество раз, когда термин а встретился в тексте / количество всех слов в тексте)
-# IDF термина а = log(Общее количество документов / Количество документов, в которых встречается термин а)
-# Чем важнее слово для определения темы документа внутри коллекции, тем больше произведение
-# keywords - первые 20 слов частотного словаря
+
+
 if __name__ == '__main__':
     word_frequency = defaultdict(int)
     keyword_tf_idf = defaultdict(float)
